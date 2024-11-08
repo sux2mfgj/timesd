@@ -1,8 +1,8 @@
 use core::fmt;
-use std::sync::Arc;
-use std::sync::Mutex;
 use std::fs::File;
 use std::io::Read;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 use crate::log::LogRecord;
 use crate::pane::config::ConfigPane;
@@ -12,6 +12,27 @@ use crate::pane::times::TimesPane;
 use crate::req::{Requester, Times};
 use eframe;
 use egui::{FontData, FontDefinitions, FontFamily};
+
+pub enum State {
+    Pre,
+    Main(Requester),
+}
+
+/* State machine
+ * |pre| -(Connect)-> |main|
+ * |pre| <-(Disconnect)- |main|
+ *
+ * Panes
+ *
+ * ShowConfig and ShowLow don't affect the app state.
+ * ShowTimesSelection and ShowTimes are only for main state.
+ * Server Select state is only for pre state.
+ *
+ * State Grouping
+ * - pre: Server Select
+ * - main: Times Select, Times
+ * - both: Config, Log
+ */
 
 pub enum Event {
     ToStart,
@@ -70,12 +91,14 @@ impl App {
     }
 
     fn config_font(cc: &eframe::CreationContext<'_>) {
-
         let font_file_path = "../fonts/ja/NotoSansJP-VariableFont_wght.ttf";
         let mut font_file = match File::open(font_file_path) {
             Ok(f) => f,
             Err(e) => {
-                error!(format!("failed to open the font file({}): {}", font_file_path, e));
+                error!(format!(
+                    "failed to open the font file({}): {}",
+                    font_file_path, e
+                ));
                 return;
             }
         };
@@ -83,10 +106,9 @@ impl App {
         let _ = font_file.read_to_end(&mut font_data);
 
         let mut fonts = FontDefinitions::default();
-        fonts.font_data.insert(
-            "ja".to_owned(),
-            FontData::from_owned(font_data),
-        );
+        fonts
+            .font_data
+            .insert("ja".to_owned(), FontData::from_owned(font_data));
 
         fonts
             .families

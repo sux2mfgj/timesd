@@ -1,4 +1,5 @@
 use crate::app::{Event, Pane};
+use crate::config::Config;
 
 use super::pane_menu;
 
@@ -27,7 +28,7 @@ impl Pane for ConfigPane {
 }
 
 impl ConfigPane {
-    pub fn new() -> Self {
+    pub fn new(config: Config) -> Self {
         Self {}
     }
 }
